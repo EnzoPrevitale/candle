@@ -1,34 +1,31 @@
-use candle_core::{Device, Tensor};
+use candle_core::{Device, Result, Tensor};
 
-fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let device: Device = Device::Cpu;
+struct Model {
+    first: Tensor,
+    second: Tensor,
+}
 
-    let a: Tensor = Tensor::new(&[1f32, 2., 3., 4.], &device)?.reshape((2, 2))?;
-    let b: Tensor = Tensor::new(&[5f32, 6., 7., 8.], &device)?.reshape((2, 2))?;
+impl Model {
+    fn forward(&self, image: &Tensor) -> Result<Tensor> {
+        let x: Tensor = image.matmul(&self.first)?;
+        let x = x.relu()?;
+        x.matmul(&self.second) 
+    }
+}
 
-    let c: Tensor = a.matmul(&b)?;
-    println!("{c}\n\n");
+fn main() -> Result<()> {
+    let device: Device = Device::Cpu; // Usando o processador
 
-    let c: Tensor = a.t()?;
-    println!("{c}\n\n");
+    let first: Tensor = Tensor::randn(0f32, 1.0, (784, 100), &device)?;
+    let second: Tensor = Tensor::randn(0f32, 1.0, (100, 10), &device)?;
 
-    let c: Tensor = a.add(&b)?;
-    println!("{c}\n\n");
+    let model: Model = Model { first, second };
 
-    let c: Tensor = a.sum_all()?;
-    println!("{c}\n\n");
+    let dummy_image: Tensor = Tensor::randn(0f32, 1.0, (1,784), &device)?;
 
-    let c: Tensor = a.sum_all()?;
-    println!("{c}\n\n");    
+    let digit: Tensor = model.forward(&dummy_image)?;
+    println!("Digit: {digit:?}");
 
-    let c: Tensor = a.mean(0)?;
-    println!("{c}\n\n");
-
-    let c: Tensor = a.broadcast_add(&b)?;
-    println!("{c}\n\n");
-
-    let c: Tensor = a.broadcast_mul(&b)?;
-    println!("{c}\n\n");
 
     Ok(())
 }
